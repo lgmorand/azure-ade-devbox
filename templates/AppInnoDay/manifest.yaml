@@ -12,3 +12,20 @@ parameters:
     description: 'Name of the Web App.'
     type: string
     required: true
+  - id: sku
+    name: Web App SKU
+    description: 'SKU of the Web App'
+    type: string
+    allowed:
+      - 'F1'
+      - 'D1'
+      - 'B1'
+      - 'B2'
+      - 'P1'
+      - 'P2'
+    default: 'P1'
+  - id: sqlserver
+    name: SQLServer
+    description: 'Name of the SQL Server.'
+    type: string
+    required: true
