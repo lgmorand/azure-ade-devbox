@@ -12,7 +12,7 @@ parameters:
     description: 'Name of the Web App.'
     type: string
     required: true
-  - id: sku
+  - id: skuName
     name: Web App SKU
     description: 'SKU of the Web App'
     type: string
@@ -24,8 +24,8 @@ parameters:
       - 'P1'
       - 'P2'
     default: 'P1'
-  - id: sqlserver
+  - id: sqlAdministratorLoginPassword
     name: SQLServer
-    description: 'Name of the SQL Server.'
+    description: 'SQL Server password.'
     type: string
     required: true
