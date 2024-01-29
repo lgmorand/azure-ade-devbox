@@ -8,7 +8,7 @@ templatePath: azuredeploy.json
 
 parameters:
   - id: name
-    name: WebAppName
+    name: Web App Name
     description: 'Name of the Web App.'
     type: string
     required: true
@@ -25,7 +25,7 @@ parameters:
       - 'P2'
     default: 'P1'
   - id: sqlAdministratorLoginPassword
-    name: SQLServerPassword
+    name: SQLServer Admin Password
     description: 'SQL Server password.'
     type: string
     required: true
