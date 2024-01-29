@@ -2,7 +2,7 @@
 name: AppInnoDay
 version: 1.0.0
 summary: WebApp + Database
-description: Deploys an full app inno day environment
+description: Deploys an full AppInnoDay environment
 runner: ARM
 templatePath: azuredeploy.json
 
