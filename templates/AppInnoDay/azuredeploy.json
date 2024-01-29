@@ -52,6 +52,13 @@
         "metadata": {
           "description": "Location for all resources."
         }
+      },
+      "name": {
+        "type": "string",
+        "defaultValue": "kikoo",
+        "metadata": {
+          "description": "Web App Name"
+        }
       }
     },
     "variables": {
