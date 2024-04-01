@@ -37,14 +37,14 @@ jobs:
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
         
       - name: Prerequisites
-        run |
+        run: |
           # install extension silently
           az config set extension.use_dynamic_install=yes_without_prompt
 
           # install extension
           az extension add --name devcenter --allow-preview true
       - name: Deploy
-        run |
+        run: |
           # create RG
           az group create -n "${{ github.event.inputs.RESOURCE_GROUP }}" -l ${{ github.event.inputs.LOCATION }}
 
