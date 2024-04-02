@@ -53,6 +53,7 @@ jobs:
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
+          then
               echo "create secret using PAT given in secrets"
               az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value "${{ secrets.PAT_TOKEN }}"
           else
