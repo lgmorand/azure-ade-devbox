@@ -45,61 +45,68 @@ jobs:
           az extension add --name devcenter --allow-preview true
       - name: Deploy
         run: |
+          RED="\e[31m"
+          GREEN="\e[32m"
+          ORANGE="\e[95m"
+          ENDCOLOR="\e[0m" 
+         
           # create RG
+          echo -e "${GREEN}Creating RG${ENDCOLOR}"
           az group create -n "${{ github.event.inputs.RESOURCE_GROUP }}" -l ${{ github.event.inputs.LOCATION }}
 
           # create keyvault & inject PAT as secret
-          echo "Creating keyvault"
+          echo -e "${GREEN}Creating keyvault${ENDCOLOR}"
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
           then
-              echo "create secret using PAT given in secrets"
+              echo -e "${GREEN}create secret using PAT given in secrets${ENDCOLOR}"
               az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value "${{ secrets.PAT_TOKEN }}"
           else
-             echo "create secret using PAT given in input"
+             echo -e "${GREEN}create secret using PAT given in input${ENDCOLOR}"
               az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value "${{ github.event.inputs.PAT_TOKEN }}"
           fi
-          
 
           # create dev environnement
           echo "creating devCenter"
+          echo -e "${GREEN}Creating dev center${ENDCOLOR}"
           az devcenter admin devcenter create --location "${{ github.event.inputs.LOCATION }}" --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # enable system identity on DevCenter
-          echo "enable system identity"
+          echo -e "${GREEN}Enabling managed identity${ENDCOLOR}"
           az devcenter admin devcenter update -n "${{ github.event.inputs.DEVCENTER_NAME }}" --identity-type SystemAssigned --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           
           # retrieving DevCenter identity
-          echo "retrieve manage identity ID"
+          echo -e "${GREEN}Retrieving manages identity${ENDCOLOR}"
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
-          echo $OID
+          echo -e "${GREEN}$OID${ENDCOLOR}"
           sleep 30 # wait for replication
-          echo "define keyvault policy"
+          echo -e "${GREEN}Creating KV policy${ENDCOLOR}"
           az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID
 
           # retrieve DevCenterId
           DEVCENTER_ID=$(az devcenter admin devcenter show --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query=id -o tsv)
 
           # Create environment types
-          echo "create environments"
+          echo -e "${GREEN}Creating environments${ENDCOLOR}"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "TEST" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
-          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
+          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "DEV" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # create a project
-          echo "create projects"
+          echo -e "${GREEN}Creating projects${ENDCOLOR}"
           az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3"
 
           # create a DevBox
-          echo "create dev box"
+          echo -e "${GREEN}Creating dev box${ENDCOLOR}"
           az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}/providers/Microsoft.DevCenter/devcenters/${{ github.event.inputs.DEVCENTER_NAME }}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_256gb" --sku name="general_i_8c32gb256ssd_v2" --name "WebDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # create a catalog
+          echo -e "${GREEN}Creating catalog${ENDCOLOR}"
           SECRETID=$(az keyvault secret show --vault-name ${{ github.event.inputs.KV_NAME }} --name GHPAT --query id -o tsv)
-          echo $SECRETID
+          echo -e "${GREEN}$SECRETID${ENDCOLOR}"
           REPO_URL="https://github.com/lgmorand/azure-ade-devbox.git"
-          az devcenter admin catalog create --git-hub path="/Environments" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "mycatalog" -d "${{ github.event.inputs.DEVCENTER_NAME }}"
+          az devcenter admin catalog create --git-hub path="/Environments" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "mycatalog" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }}
 
 
           
