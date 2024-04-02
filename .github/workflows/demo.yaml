@@ -67,7 +67,8 @@ jobs:
           az devcenter admin devcenter create --location "${{ github.event.inputs.LOCATION }}" --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # enable system identity on DevCenter
-          az devcenter admin devcenter update -n "${{ github.event.inputs.DEVCENTER_NAME }}" --identity-type SystemAssigned
+          az devcenter admin devcenter update -n "${{ github.event.inputs.DEVCENTER_NAME }}" --identity-type SystemAssigned --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
+          
           # retrieving DevCenter identity
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
           echo $OID
@@ -78,14 +79,17 @@ jobs:
           DEVCENTER_ID=$(az devcenter admin devcenter show --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query=id -o tsv)
 
           # Create environment types
+          echo "create environments"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "TEST" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # create a project
+          echo "create projects"
           az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3"
 
           # create a DevBox
+          echo "create dev box"
           az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/735a4022-4b84-41dc-8200-dc028954e80d/resourceGroups/rg-test/providers/Microsoft.DevCenter/devcenters/Contoso/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_256gb" --sku name="general_i_8c32gb256ssd_v2" --name "WebDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # create a catalog
