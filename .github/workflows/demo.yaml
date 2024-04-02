@@ -32,15 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Manage PAT TOKEN
-        run: |
-          export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
-          if [ -z "$GHPAT" ]
-          then
-                GHPAT="${{ secrets.PAT_TOKEN }}"
-          fi
-          echo $GHPAT
           
       - name: AZ Login
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
@@ -60,7 +51,15 @@ jobs:
           # create keyvault & inject PAT as secret
           echo "Creating keyvault"
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"
-          az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value $GHPAT
+          export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
+          if [ -z "$GHPAT" ]
+              echo "create secret using PAT given in secrets"
+              az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value "${{ secrets.PAT_TOKEN }}"
+          else
+             echo "create secret using PAT given in input"
+              az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value "${{ github.event.inputs.PAT_TOKEN }}"
+          fi
+          
 
           # create dev environnement
           echo "creating devCenter"
