@@ -67,12 +67,15 @@ jobs:
           az devcenter admin devcenter create --location "${{ github.event.inputs.LOCATION }}" --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
 
           # enable system identity on DevCenter
+          echo "enable system identity"
           az devcenter admin devcenter update -n "${{ github.event.inputs.DEVCENTER_NAME }}" --identity-type SystemAssigned --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           
           # retrieving DevCenter identity
+          echo "retrieve manage identity ID"
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
           echo $OID
           sleep 30 # wait for replication
+          echo "define keyvault policy"
           az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID
 
           # retrieve DevCenterId
