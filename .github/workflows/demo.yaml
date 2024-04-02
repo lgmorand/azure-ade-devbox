@@ -38,8 +38,9 @@ jobs:
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
           then
-                $GHPAT=${{ secrets.PAT_TOKEN }}
+                GHPAT="${{ secrets.PAT_TOKEN }}"
           fi
+          echo $GHPAT
           
       - name: AZ Login
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
