@@ -6,7 +6,7 @@ on:
       DEVCENTER_NAME:
         description: 'DevCenter Name'     
         required: true
-        default: 'aks-test'
+        default: 'devcenterdemolgm'
       PROJECT_NAME:
         description: 'Project Name' 
         required: true
@@ -25,7 +25,7 @@ on:
         default: 'kv-demoadelgm'
       PAT_TOKEN:
           description: 'PAT allowing to access your Github Repo' 
-          required: true
+          required: false
 jobs:
   Deploy:
     runs-on: ubuntu-latest
@@ -33,6 +33,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Manage PAT TOKEN
+        run: |
+          export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
+          if [ -z "$GHPAT" ]
+          then
+                $GHPAT=${{ secrets.PAT_TOKEN }}
+          fi
+          
       - name: AZ Login
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
         
@@ -50,8 +58,8 @@ jobs:
 
           # create keyvault & inject PAT as secret
           echo "Creating keyvault"
-          az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }}
-          az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value ${{ github.event.inputs.PAT_TOKEN }} 
+          az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"
+          az keyvault secret set --vault-name "${{ github.event.inputs.KV_NAME }}" --name GHPAT --value $GHPAT
 
           # create dev environnement
           echo "creating devCenter"
