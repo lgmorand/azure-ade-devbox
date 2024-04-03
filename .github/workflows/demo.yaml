@@ -80,12 +80,12 @@ jobs:
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # retrieving DevCenter identity
-          echo "Retrieving manages identity"
+          echo "Retrieving managed identity"
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
           printf "${ORANGE}$OID${ENDCOLOR}\n"
           sleep 30 # wait for replication
           echo -e "Creating KV policy"
-          az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -o none
+          az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # retrieve DevCenterId
