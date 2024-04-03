@@ -53,7 +53,7 @@ jobs:
           # create RG
           echo -"Creating RG"
           az group create -n "${{ github.event.inputs.RESOURCE_GROUP }}" -l ${{ github.event.inputs.LOCATION }} -o none
-          echo -e $"${GREEN}\u2714 Success ${ENDCOLOR}\r\n"
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # create keyvault & inject PAT as secret
           echo "Creating keyvault"

@@ -4,10 +4,16 @@ This repo helps to setup a demo of Azure Deployment Environment and Azure Dev Bo
 
 # Installation
 
-1. Run the Github Action workflow to provision a workflow
+1. Run the [Github Action workflow](https://github.com/lgmorand/azure-ade-devbox/actions/workflows/demo.yaml) to provision a workflow
 
 2. Add the quickstart repository (I didn't find a way to add it with CLI) 
 
+    - Go to the Azure portal, and navigate to your dev center.
+    - In the left menu under Environment configuration, select Catalogs, and then select Add.
+    - In Add catalog, pick “Microsoft’s quick start catalog” and “Dev box customization tasks” as the quick start catalog type. Then, select Add:
+    - In Catalogs for the dev center, verify that your catalog appears. If the connection is successful, Status is Connected.
+
+![](./media/add-quick-catalog.png)
 
 # Demo
 
