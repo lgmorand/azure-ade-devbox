@@ -119,3 +119,8 @@ jobs:
           az devcenter admin catalog create --git-hub path="/Tasks" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "QuickStart" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           echo -e $"${GREEN}\u2714 Success ${ENDCOLOR}\r\n"
 
+          # creating pools
+          echo "Creating pools"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled"
+          echo -e $"${GREEN}\u2714 Success ${ENDCOLOR}\r\n"
