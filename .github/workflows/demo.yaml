@@ -51,7 +51,7 @@ jobs:
           ENDCOLOR="\e[0m" 
          
           # create RG
-          echo -"Creating RG"
+          echo "Creating RG"
           az group create -n "${{ github.event.inputs.RESOURCE_GROUP }}" -l ${{ github.event.inputs.LOCATION }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
@@ -82,7 +82,7 @@ jobs:
           # retrieving DevCenter identity
           echo "Retrieving manages identity"
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
-          printf "${ORANGE}$OID${ENDCOLOR}"
+          printf "${ORANGE}$OID${ENDCOLOR}\n"
           sleep 30 # wait for replication
           echo -e "Creating KV policy"
           az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -o none
@@ -112,7 +112,7 @@ jobs:
           # create a catalog
           echo "Creating catalog"
           SECRETID=$(az keyvault secret show --vault-name ${{ github.event.inputs.KV_NAME }} --name GHPAT --query id -o tsv)
-          printf "${ORANGE} $SECRETID ${ENDCOLOR}"
+          printf "${ORANGE} $SECRETID ${ENDCOLOR}\n"
           REPO_URL="https://github.com/lgmorand/azure-ade-devbox.git"
           az devcenter admin catalog create --git-hub path="/Environments" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "EnvCatalog" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           REPO_URL="https://github.com/microsoft/devcenter-catalog.git"
@@ -121,6 +121,6 @@ jobs:
 
           # creating pools
           echo "Creating pools"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Unmanaged"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Unmanaged"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed"
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"

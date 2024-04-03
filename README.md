@@ -19,6 +19,6 @@ This repo helps to setup a demo of Azure Deployment Environment and Azure Dev Bo
 
 1. Go on the [Developer portal](https://devportal.microsoft.com/)
 
-2. Create a DevBox. Select and upload a customization file. One can be found [here](./DevBox/project-orchard.yaml)
+2. Create a DevBox. Select and upload a customization file. One example can be found [here](./DevBox/project-orchard.yaml)
 
-3. Wait for the creation of the DevBox. Can take up to 25min.
+3. Wait for the creation of the DevBox. **It can take between 25 and 60min !!!**
