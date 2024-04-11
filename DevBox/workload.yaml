@@ -6,9 +6,21 @@ tasks:
       package: vscode
   - name: choco
     parameters:
-      package: nodejs
+      package: python3
+      version: 3.11.0
+  - name: powershell
+    parameters:
+      command: |
+        # Install WSL2 distros
+        wsl --install -d Ubuntu-22.04;
+
+        # Install VSCode extensions
+        code --install-extension ms-python.python;
+        code --install-extension ms-vscode-remote.remote-wsl;
+        code --install-extension d-biehl.robotcode
+      runAsUser: true
   - name: git-clone
     description: Clone this repository into C:\Workspaces
     parameters:
-      repositoryUrl: https://github.com/OrchardCMS/OrchardCore.git
-      directory: C:\Workspaces
+      repositoryUrl: https://github.com/lgmorand/the-aks-checklist
+      directory: C:\Dev
