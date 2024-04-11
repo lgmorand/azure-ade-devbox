@@ -62,7 +62,7 @@ jobs:
           fi
 
           echo "Creating keyvault"
-          if [ $(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name -o tsv") = '${{ github.event.inputs.KV_NAME }}' ]; then
+          if [ $(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv) = '${{ github.event.inputs.KV_NAME }}' ]; then
             echo 'KV already exist. Trying to purge it'
             az keyvault purge --name "${{ github.event.inputs.KV_NAME }}"
           fi
