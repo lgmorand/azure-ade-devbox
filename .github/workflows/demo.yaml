@@ -56,7 +56,16 @@ jobs:
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # create keyvault & inject PAT as secret
+          if [ $(az keyvault check-name --name "${{ github.event.inputs.KV_NAME }}" --query nameAvailable -o tsv) = false ]; then
+            echo 'KV already exist. Trying purge'
+            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}"
+          fi
+
           echo "Creating keyvault"
+          if [ $(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv ") = '${{ github.event.inputs.KV_NAME }}' ]; then
+            echo 'KV already exist. Trying to purge it'
+            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}"
+          fi
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"  -o none
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
@@ -121,6 +130,6 @@ jobs:
 
           # creating pools
           echo "Creating pools"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope"
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
