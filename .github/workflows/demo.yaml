@@ -183,7 +183,7 @@ jobs:
             
               ],
               "AssignableScopes": [
-                "/subscriptions/$SUBSCRIPTION_ID"
+                "/subscriptions/${{ vars.SUBSCRIPTION_ID }}"
               ]
             }
           EOF
