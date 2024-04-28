@@ -133,6 +133,78 @@ jobs:
           --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
+          echo -e "Creating image definition vscodeImage in Azure Compute Gallery $IMAGE_BUILDER_GALLERY_NAME"
+
+          az sig image-definition create \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
+          --gallery-name $IMAGE_BUILDER_GALLERY_NAME \
+          --gallery-image-definition "vscodeImage" \
+          --os-type "Windows" \
+          --os-state "Generalized" \
+          --publisher "lgmorand" \
+          --offer "vscodebox" \
+          --sku "1-0-0" \
+          --hyper-v-generation "V2" \
+          --features "SecurityType=TrustedLaunch"
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          IMAGE_BUILDER_IDENTITY="image-builder-identity"
+          echo -e "Creating Azure Image Builder identity $IMAGE_BUILDER_IDENTITY"
+
+          IDENTITY_CLIENT_ID=$(az identity create \
+          --name $IMAGE_BUILDER_IDENTITY \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
+          --query clientId -o tsv)
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo -e "Wait 30 seconds for the identity to be created 🕒"
+          sleep 30
+
+          echo -e "Assigning role to Azure Image Builder identity $IMAGE_BUILDER_IDENTITY"
+
+          az role definition create --role-definition @- <<EOF
+          {
+              "Name": "Azure Image Builder Service Image Creation Role",
+              "IsCustom": true,
+              "Description": "Image Builder access to create resources for the image build, you should delete or split out as appropriate",
+              "Actions": [
+                  "Microsoft.Compute/galleries/read",
+                  "Microsoft.Compute/galleries/images/read",
+                  "Microsoft.Compute/galleries/images/versions/read",
+                  "Microsoft.Compute/galleries/images/versions/write",
+
+                  "Microsoft.Compute/images/write",
+                  "Microsoft.Compute/images/read",
+                  "Microsoft.Compute/images/delete"
+              ],
+              "NotActions": [
+            
+              ],
+              "AssignableScopes": [
+                "/subscriptions/$SUBSCRIPTION_ID"
+              ]
+            }
+          EOF
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo -e "Check the custom role was created successfully 🎉"
+
+          az role definition list --custom-role-only -o table
+
+          echo -e "Assign the custom role to the identity $IMAGE_BUILDER_IDENTITY"
+
+          az role assignment create \
+          --role "Azure Image Builder Service Image Creation Role" \
+          --assignee $IDENTITY_CLIENT_ID \
+          --scope /subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo -e "Check the role was assigned successfully ✅"
+          az role assignment list --assignee $IDENTITY_CLIENT_ID --all -o table
+
+          IDENTITY_ID=$(az identity show --name $IMAGE_BUILDER_IDENTITY --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv)
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+          
           # Create environment types
           echo "Creating environments"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
