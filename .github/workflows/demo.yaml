@@ -62,10 +62,10 @@ jobs:
           # create keyvault & inject PAT as secret
 
           echo "Creating keyvault"
-          kvName=$(az keyvault list-deleted --query "[?contains(name, '${KEYVAULT_NAME}')].name" -o tsv)
+          kvName=$(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv)
           case "$kvName" in 
-          "$KEYVAULT_NAME" ) echo 'KV name already exists. Trying to purge'
-            az keyvault purge --name "${KEYVAULT_NAME}";;
+          "${{ github.event.inputs.KV_NAME }}" ) echo 'KV name already exists. Trying to purge'
+            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";;
           *) ;;
           esac
 
@@ -99,9 +99,39 @@ jobs:
           echo -e "Creating KV policy"
           az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+          
 
-          # retrieve DevCenterId
+          # retrieve DevCenterId & principalID
           DEVCENTER_ID=$(az devcenter admin devcenter show --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query=id -o tsv)
+          DEV_CENTER_CLIENT_ID=$(az devcenter admin devcenter show \
+          --name $DEV_CENTER_NAME \
+          --resource-group $RESOURCE_GROUP \
+          --query identity.principalId -o tsv)
+
+          # Custom Image
+          export IMAGE_BUILDER_GALLERY_NAME="imagebuildergallery"
+          echo -e "Creating Azure Compute Gallery $IMAGE_BUILDER_GALLERY_NAME in $LOCATION"
+          az sig create \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
+          --gallery-name $IMAGE_BUILDER_GALLERY_NAME \
+          --location "${{ github.event.inputs.LOCATION }}"
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "Let's assign the Contributor role to the Dev Center for the gallery"
+          az role assignment create \
+          --role "Contributor" \
+          --assignee $DEV_CENTER_CLIENT_ID \
+          --scope $(az sig show --gallery-name $IMAGE_BUILDER_GALLERY_NAME \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv)
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "Then you can associate the gallery with the Dev Center"
+          az devcenter admin gallery create \
+          --name $IMAGE_BUILDER_GALLERY_NAME \
+          --gallery-resource-id $(az sig show --gallery-name $IMAGE_BUILDER_GALLERY_NAME --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) \
+          --dev-center "${{ github.event.inputs.DEVCENTER_NAME }}" \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}"
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # Create environment types
           echo "Creating environments"
