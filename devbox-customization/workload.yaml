@@ -11,9 +11,6 @@ tasks:
   - name: powershell
     parameters:
       command: |
-        # Install WSL2 distros
-        wsl --install -d Ubuntu-22.04;
-
         # Install VSCode extensions
         code --install-extension ms-python.python;
         code --install-extension ms-vscode-remote.remote-wsl;

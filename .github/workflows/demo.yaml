@@ -26,6 +26,10 @@ on:
       PAT_TOKEN:
           description: 'PAT allowing to access your Github Repo' 
           required: false
+      DEMO_USER:
+        description: 'User used to access the DevCenter (must NOT be a guest user)' 
+        required: true
+        default: 'lgmorand@lgmdemo.onmicrosoft.com'
 jobs:
   Deploy:
     runs-on: ubuntu-latest
@@ -56,16 +60,15 @@ jobs:
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # create keyvault & inject PAT as secret
-          if [ $(az keyvault check-name --name "${{ github.event.inputs.KV_NAME }}" --query nameAvailable -o tsv) = false ]; then
-            echo 'KV already exist. Trying purge'
-            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}"
-          fi
 
           echo "Creating keyvault"
-          if [ $(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv) = '${{ github.event.inputs.KV_NAME }}' ]; then
-            echo 'KV already exist. Trying to purge it'
-            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}"
-          fi
+          kvName=$(az keyvault list-deleted --query "[?contains(name, '${KEYVAULT_NAME}')].name" -o tsv)
+          case "$kvName" in 
+          "$KEYVAULT_NAME" ) echo 'KV name already exists. Trying to purge'
+            az keyvault purge --name "${KEYVAULT_NAME}";;
+          *) ;;
+          esac
+
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"  -o none
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
@@ -109,7 +112,7 @@ jobs:
 
           # create a project
           echo "Creating projects"
-          az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3" -o none
+          az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3" -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # create a DevBox
@@ -130,6 +133,20 @@ jobs:
 
           # creating pools
           echo "Creating pools"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "DevProject" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "giving access to the user"
+          ENTRA_ID_USER_ID=$(az ad user show --id $DEMO_USER --query id -o tsv)
+          az role assignment create \
+            --role "DevCenter Dev Box User" \
+            --assignee $ENTRA_ID_USER_ID \
+            --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
+
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          
+          echo "::notice::You can now access your DevCenter at https://devportal.microsoft.com/"
+
+
