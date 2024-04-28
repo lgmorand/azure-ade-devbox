@@ -102,11 +102,13 @@ jobs:
           
 
           # retrieve DevCenterId & principalID
+          echo "Retrieving IDs"
           DEVCENTER_ID=$(az devcenter admin devcenter show --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query=id -o tsv)
           DEV_CENTER_CLIENT_ID=$(az devcenter admin devcenter show \
-          --name $DEV_CENTER_NAME \
-          --resource-group $RESOURCE_GROUP \
+          --name "${{ github.event.inputs.DEVCENTER_NAME }}" \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
           --query identity.principalId -o tsv)
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # Custom Image
           export IMAGE_BUILDER_GALLERY_NAME="imagebuildergallery"
