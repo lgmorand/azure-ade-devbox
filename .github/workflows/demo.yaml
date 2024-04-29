@@ -201,6 +201,8 @@ jobs:
             printf $"${ORANGE}\u2714 Role already exists, no need to create ${ORANGE}\n\n"
           fi
 
+          
+
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo -e "Check the custom role was created successfully 🎉"
@@ -221,6 +223,83 @@ jobs:
           IDENTITY_ID=$(az identity show --name $IMAGE_BUILDER_IDENTITY --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv)
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
+          echo -e "The easiest way to generate the template is using this assistant: https://portal.azure.com/#create/Microsoft.ImageTemplate"
+          
+          VSCODE_IMAGE_NAME="vscodeWinImage"
+          VSCODE_RUN_OUTPUT_NAME="vscodeWinImageRunOutput"
+          VSCODE_IMAGE_TEMPLATE="vscodeTemplate"
+          VSCODE_IMAGE_DEFINITION="vscodeImage"
+
+          mkdir -p tmp
+          cp custom-images/win11-with-vscode.json tmp/win11-with-vscode.json
+          
+          sed -i -e "s%<subscriptionID>%${{ vars.SUBSCRIPTION_ID }}%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<rgName>%${{ github.event.inputs.RESOURCE_GROUP }}%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<region1>%${{ github.event.inputs.LOCATION }}%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<runOutputName>%$VSCODE_RUN_OUTPUT_NAME%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<sharedImageGalName>%$IMAGE_BUILDER_GALLERY_NAME%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<imgBuilderId>%$IDENTITY_ID%g" tmp/win11-with-vscode.json
+          sed -i -e "s%<imageDefName>%$VSCODE_IMAGE_DEFINITION%g" tmp/win11-with-vscode.json
+          
+          
+          echo -e "This template needs some parameters so let's create a parameters file"
+          
+          cat <<EOF > tmp/win11-with-vscode-parameters.json
+          {
+            "imageTemplateName": {
+              "value": "$VSCODE_IMAGE_TEMPLATE"
+            },
+            "api-version": {
+              "value": "2020-02-14"
+            },
+            "svclocation": {
+              "value": "${{ github.event.inputs.LOCATION }}"
+            }
+          }
+          EOF
+          
+          echo -e "And now let's create the Image Template using this ARM template 😁"
+          
+          az group deployment create \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
+          --template-file tmp/win11-with-vscode.json \
+          --parameters @tmp/win11-with-vscode-parameters.json
+          
+          echo -e "We have the image template but now we need to create an image inside the gallery. Let's run Azure Image Builder to create it"
+          
+          time az image builder run \
+          --name $VSCODE_IMAGE_TEMPLATE \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }}
+
+          IMAGE_REFERENCE_ID=$(az devcenter admin image show \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
+          --dev-center ${{ github.event.inputs.DEVCENTER_NAME }} \
+          --gallery-name $IMAGE_BUILDER_GALLERY_NAME \
+          --name  $VSCODE_IMAGE_DEFINITION \
+          --query id -o tsv)
+
+          DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER="devbox-for-custom-image-with-image-builder"
+          CUSTOM_IMAGE_DEV_BOX_POOL_NAME="custom-image-dev-box-pool"
+
+          time az devcenter admin devbox-definition create \
+          --name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
+          --dev-center ${{ github.event.inputs.DEVCENTER_NAME }} \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
+          --image-reference id=$IMAGE_REFERENCE_ID \
+          --os-storage-type "ssd_256gb" \
+          --sku name="general_i_8c32gb256ssd_v2"
+
+          echo -e "Create a dev box pool for project name: $project_name"
+
+            time az devcenter admin pool create \
+            --name "${CUSTOM_IMAGE_DEV_BOX_POOL_NAME}" \
+            --project-name $project_name \
+            --resource-group $RESOURCE_GROUP \
+            --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
+            --local-administrator Enabled \
+            --virtual-network-type Managed \
+            --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }}
+
           # Create environment types
           echo "Creating environments"
           az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
