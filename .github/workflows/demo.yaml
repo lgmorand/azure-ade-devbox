@@ -110,6 +110,68 @@ jobs:
           --query identity.principalId -o tsv)
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
+          
+
+          # Create environment types
+          echo "Creating environments"
+          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
+          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "TEST" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
+          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "DEV" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          # create a project
+          echo "Creating projects"
+          az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3" -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          # create a DevBox
+          echo "Creating dev box"
+          az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}/providers/Microsoft.DevCenter/devcenters/${{ github.event.inputs.DEVCENTER_NAME }}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_256gb" --sku name="general_i_8c32gb256ssd_v2" --name "WebDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
+          az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}/providers/Microsoft.DevCenter/devcenters/${{ github.event.inputs.DEVCENTER_NAME }}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_512gb" --sku name="general_i_32c128gb512ssd_v2" --name "SuperPowerfulDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          # create a catalog
+          echo "Creating catalog"
+          SECRETID=$(az keyvault secret show --vault-name ${{ github.event.inputs.KV_NAME }} --name GHPAT --query id -o tsv)
+          printf "${ORANGE} $SECRETID ${ENDCOLOR}\n"
+          REPO_URL="https://github.com/lgmorand/azure-ade-devbox.git"
+          az devcenter admin catalog create --git-hub path="/catalog" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "EnvCatalog" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
+          REPO_URL="https://github.com/microsoft/devcenter-catalog.git"
+          az devcenter admin catalog create --git-hub path="/Tasks" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "QuickStart" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          # creating pools
+          echo "Creating pools"
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+
+          echo "creating projects environments types"
+          OWNER_ROLE_ID=$(az role definition list -n "Owner" --scope /subscriptions/$SUBSCRIPTION_ID --query '[].name' -o tsv)
+
+          az devcenter admin project-environment-type create \
+          --name "DEV" \
+          --resource-group $RESOURCE_GROUP \
+          --project-name $PROJECT_FOR_ENVIRONMENTS \
+          --roles "{\"$OWNER_ROLE_ID\":{}}" \
+          --identity-type "SystemAssigned" \
+          --deployment-target-id "/subscriptions/$SUBSCRIPTION_ID" \
+          --status "Enabled"
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "giving access to the user"
+          ENTRA_ID_USER_ID=$(az ad user show --id ${{ github.event.inputs.DEMO_USER }} --query id -o tsv)
+          az role assignment create \
+            --role "DevCenter Dev Box User" \
+            --assignee $ENTRA_ID_USER_ID \
+            --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
+          az role assignment create \
+          --role "Deployment Environments User" \
+          --assignee $ENTRA_ID_USER_ID \
+          --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
           # Custom Image
           export IMAGE_BUILDER_GALLERY_NAME="imagebuildergallery"
           echo -e "Creating Azure Compute Gallery $IMAGE_BUILDER_GALLERY_NAME in $LOCATION"
@@ -263,7 +325,7 @@ jobs:
           
           echo -e "We have the image template but now we need to create an image inside the gallery. Let's run Azure Image Builder to create it"
           
-          echo "Creating the image"
+          echo "Creating the image (can take 30+ minutes)"
           time az image builder run \
           --name $VSCODE_IMAGE_TEMPLATE \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
@@ -295,11 +357,11 @@ jobs:
           -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          echo -e "Create a dev box pool for project name: $project_name"
+          echo -e "Create a dev box pool for project name: ${{ github.event.inputs.PROJECT_NAME }}""
 
             time az devcenter admin pool create \
             --name "${CUSTOM_IMAGE_DEV_BOX_POOL_NAME}" \
-            --project-name $project_name \
+            --project-name ${{ github.event.inputs.PROJECT_NAME }}" \
             --resource-group $RESOURCE_GROUP \
             --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
             --local-administrator Enabled \
@@ -307,67 +369,6 @@ jobs:
             --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
             -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          # Create environment types
-          echo "Creating environments"
-          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "PROD" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
-          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "TEST" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
-          az devcenter admin environment-type create --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --name "DEV" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          # create a project
-          echo "Creating projects"
-          az devcenter admin project create --location "${{ github.event.inputs.LOCATION }}" --description "This is my first project." --dev-center-id "$DEVCENTER_ID" --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --max-dev-boxes-per-user "3" -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          # create a DevBox
-          echo "Creating dev box"
-          az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}/providers/Microsoft.DevCenter/devcenters/${{ github.event.inputs.DEVCENTER_NAME }}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_256gb" --sku name="general_i_8c32gb256ssd_v2" --name "WebDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
-          az devcenter admin devbox-definition create --location "${{ github.event.inputs.LOCATION }}" --image-reference id="/subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }}/providers/Microsoft.DevCenter/devcenters/${{ github.event.inputs.DEVCENTER_NAME }}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win11-m365-gen2" --os-storage-type "ssd_512gb" --sku name="general_i_32c128gb512ssd_v2" --name "SuperPowerfulDevBox" --dev-center-name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          # create a catalog
-          echo "Creating catalog"
-          SECRETID=$(az keyvault secret show --vault-name ${{ github.event.inputs.KV_NAME }} --name GHPAT --query id -o tsv)
-          printf "${ORANGE} $SECRETID ${ENDCOLOR}\n"
-          REPO_URL="https://github.com/lgmorand/azure-ade-devbox.git"
-          az devcenter admin catalog create --git-hub path="/catalog" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "EnvCatalog" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
-          REPO_URL="https://github.com/microsoft/devcenter-catalog.git"
-          az devcenter admin catalog create --git-hub path="/Tasks" branch="main" secret-identifier=$SECRETID uri=$REPO_URL -n "QuickStart" -d "${{ github.event.inputs.DEVCENTER_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          # creating pools
-          echo "Creating pools"
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
-          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-
-          echo "creating projects environments types"
-          OWNER_ROLE_ID=$(az role definition list -n "Owner" --scope /subscriptions/$SUBSCRIPTION_ID --query '[].name' -o tsv)
-
-          az devcenter admin project-environment-type create \
-          --name "DEV" \
-          --resource-group $RESOURCE_GROUP \
-          --project-name $PROJECT_FOR_ENVIRONMENTS \
-          --roles "{\"$OWNER_ROLE_ID\":{}}" \
-          --identity-type "SystemAssigned" \
-          --deployment-target-id "/subscriptions/$SUBSCRIPTION_ID" \
-          --status "Enabled"
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          echo "giving access to the user"
-          ENTRA_ID_USER_ID=$(az ad user show --id ${{ github.event.inputs.DEMO_USER }} --query id -o tsv)
-          az role assignment create \
-            --role "DevCenter Dev Box User" \
-            --assignee $ENTRA_ID_USER_ID \
-            --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
-          az role assignment create \
-          --role "Deployment Environments User" \
-          --assignee $ENTRA_ID_USER_ID \
-          --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
           
           echo "::notice::You can now access your DevCenter at https://devportal.microsoft.com/"
 
