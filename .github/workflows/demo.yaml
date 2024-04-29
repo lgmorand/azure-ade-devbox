@@ -168,7 +168,7 @@ jobs:
 
           echo -e "Assigning role to Azure Image Builder identity $IMAGE_BUILDER_IDENTITY"
 
-          roleId=$(az role definition list --query "[?contains(roleName, 'Azure Image Builder Service Image Creation Role"')].id" -o tsv)
+          roleId=$(az role definition list --query "[?contains(roleName, 'Azure Image Builder Service Image Creation Role')].id" -o tsv)
           if [ -z "$roleId" ]
           then
             az role definition create -o none --role-definition @- <<EOF
@@ -195,6 +195,7 @@ jobs:
               }
             EOF
           fi
+
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo -e "Check the custom role was created successfully 🎉"
