@@ -168,29 +168,33 @@ jobs:
 
           echo -e "Assigning role to Azure Image Builder identity $IMAGE_BUILDER_IDENTITY"
 
-          az role definition create -o none --role-definition @- <<EOF
-          {
-              "Name": "Azure Image Builder Service Image Creation Role",
-              "IsCustom": true,
-              "Description": "Image Builder access to create resources for the image build, you should delete or split out as appropriate",
-              "Actions": [
-                  "Microsoft.Compute/galleries/read",
-                  "Microsoft.Compute/galleries/images/read",
-                  "Microsoft.Compute/galleries/images/versions/read",
-                  "Microsoft.Compute/galleries/images/versions/write",
+          roleId=$(az role definition list --query "[?contains(roleName, 'Azure Image Builder Service Image Creation Role"')].id" -o tsv)
+          if [ -z "$roleId" ]
+          then
+            az role definition create -o none --role-definition @- <<EOF
+            {
+                "Name": "Azure Image Builder Service Image Creation Role",
+                "IsCustom": true,
+                "Description": "Image Builder access to create resources for the image build, you should delete or split out as appropriate",
+                "Actions": [
+                    "Microsoft.Compute/galleries/read",
+                    "Microsoft.Compute/galleries/images/read",
+                    "Microsoft.Compute/galleries/images/versions/read",
+                    "Microsoft.Compute/galleries/images/versions/write",
 
-                  "Microsoft.Compute/images/write",
-                  "Microsoft.Compute/images/read",
-                  "Microsoft.Compute/images/delete"
-              ],
-              "NotActions": [
-            
-              ],
-              "AssignableScopes": [
-                "/subscriptions/${{ vars.SUBSCRIPTION_ID }}"
-              ]
-            }
-          EOF
+                    "Microsoft.Compute/images/write",
+                    "Microsoft.Compute/images/read",
+                    "Microsoft.Compute/images/delete"
+                ],
+                "NotActions": [
+              
+                ],
+                "AssignableScopes": [
+                  "/subscriptions/${{ vars.SUBSCRIPTION_ID }}"
+                ]
+              }
+            EOF
+          fi
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo -e "Check the custom role was created successfully 🎉"
