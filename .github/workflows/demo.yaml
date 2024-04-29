@@ -51,3 +51,4 @@ jobs:
         shell: bash
         run: |
           . deploy.sh
+        working-directory: infra
