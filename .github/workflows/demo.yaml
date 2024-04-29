@@ -169,7 +169,6 @@ jobs:
           echo -e "Assigning role to Azure Image Builder identity $IMAGE_BUILDER_IDENTITY"
 
           roleId=$(az role definition list --query "[?contains(roleName, 'Azure Image Builder Service Image Creation Role')].id" -o tsv)
-          echo $roleId
           if [ -z "$roleId" ]
           then
           
@@ -205,10 +204,6 @@ jobs:
 
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          echo -e "Check the custom role was created successfully 🎉"
-
-          az role definition list --custom-role-only -o table 
-
           echo -e "Assign the custom role to the identity $IMAGE_BUILDER_IDENTITY"
 
           az role assignment create \
@@ -217,8 +212,8 @@ jobs:
           --scope /subscriptions/${{ vars.SUBSCRIPTION_ID }}/resourceGroups/${{ github.event.inputs.RESOURCE_GROUP }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          echo -e "Check the role was assigned successfully ✅"
-          az role assignment list --assignee $IDENTITY_CLIENT_ID --all -o table
+          # echo -e "Check the role was assigned successfully ✅"
+          # az role assignment list --assignee $IDENTITY_CLIENT_ID --all -o table
 
           IDENTITY_ID=$(az identity show --name $IMAGE_BUILDER_IDENTITY --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv)
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
@@ -260,16 +255,18 @@ jobs:
           
           echo -e "And now let's create the Image Template using this ARM template 😁"
           
-          az group deployment create \
+          az deployment group create \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
           --template-file tmp/win11-with-vscode.json \
-          --parameters @tmp/win11-with-vscode-parameters.json
+          --parameters @tmp/win11-with-vscode-parameters.json \
+          -o none
           
           echo -e "We have the image template but now we need to create an image inside the gallery. Let's run Azure Image Builder to create it"
           
           time az image builder run \
           --name $VSCODE_IMAGE_TEMPLATE \
-          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }}
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
+          -o none
 
           IMAGE_REFERENCE_ID=$(az devcenter admin image show \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
@@ -287,7 +284,8 @@ jobs:
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
           --image-reference id=$IMAGE_REFERENCE_ID \
           --os-storage-type "ssd_256gb" \
-          --sku name="general_i_8c32gb256ssd_v2"
+          --sku name="general_i_8c32gb256ssd_v2" \
+          -o none
 
           echo -e "Create a dev box pool for project name: $project_name"
 
@@ -298,7 +296,8 @@ jobs:
             --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
             --local-administrator Enabled \
             --virtual-network-type Managed \
-            --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }}
+            --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
+            -o none
 
           # Create environment types
           echo "Creating environments"
