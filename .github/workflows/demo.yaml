@@ -275,7 +275,10 @@ jobs:
             --role "DevCenter Dev Box User" \
             --assignee $ENTRA_ID_USER_ID \
             --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
-
+          az role assignment create \
+          --role "Deployment Environments User" \
+          --assignee $ENTRA_ID_USER_ID \
+          --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           
