@@ -198,7 +198,7 @@ jobs:
           EOF
 
           else
-            echo "Role already exists, no need to create"
+            printf $"${ORANGE}\u2714 Role already exists, no need to create ${ORANGE}\n\n"
           fi
 
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
@@ -253,6 +253,20 @@ jobs:
           echo "Creating pools"
           az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "WebDevBox" --pool-name "DevPool" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
           az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" --devbox-definition-name "SuperPowerfulDevBox" --pool-name "DevPoolPowerFull" --project-name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --local-administrator "Enabled" --virtual-network-type "Managed" --managed-virtual-network-regions "westeurope" -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+
+          echo "creating projects environments types"
+          OWNER_ROLE_ID=$(az role definition list -n "Owner" --scope /subscriptions/$SUBSCRIPTION_ID --query '[].name' -o tsv)
+
+          az devcenter admin project-environment-type create \
+          --name "DEV" \
+          --resource-group $RESOURCE_GROUP \
+          --project-name $PROJECT_FOR_ENVIRONMENTS \
+          --roles "{\"$OWNER_ROLE_ID\":{}}" \
+          --identity-type "SystemAssigned" \
+          --deployment-target-id "/subscriptions/$SUBSCRIPTION_ID" \
+          --status "Enabled"
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo "giving access to the user"
