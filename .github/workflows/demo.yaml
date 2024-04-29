@@ -263,10 +263,14 @@ jobs:
           
           echo -e "We have the image template but now we need to create an image inside the gallery. Let's run Azure Image Builder to create it"
           
+          echo "Creating the image"
           time az image builder run \
           --name $VSCODE_IMAGE_TEMPLATE \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
           -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          sleep 30
 
           IMAGE_REFERENCE_ID=$(az devcenter admin image show \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
@@ -275,9 +279,12 @@ jobs:
           --name  $VSCODE_IMAGE_DEFINITION \
           --query id -o tsv)
 
+          printf $"${ORANGE}\u2714 $IMAGE_REFERENCE_ID ${ORANGE}\n\n"
+
           DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER="devbox-for-custom-image-with-image-builder"
           CUSTOM_IMAGE_DEV_BOX_POOL_NAME="custom-image-dev-box-pool"
 
+          echo "creating the devbox-definition"
           time az devcenter admin devbox-definition create \
           --name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
           --dev-center ${{ github.event.inputs.DEVCENTER_NAME }} \
@@ -286,6 +293,7 @@ jobs:
           --os-storage-type "ssd_256gb" \
           --sku name="general_i_8c32gb256ssd_v2" \
           -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo -e "Create a dev box pool for project name: $project_name"
 
@@ -298,6 +306,7 @@ jobs:
             --virtual-network-type Managed \
             --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
             -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # Create environment types
           echo "Creating environments"
