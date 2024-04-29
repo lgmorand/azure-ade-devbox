@@ -194,7 +194,7 @@ jobs:
                   "/subscriptions/${{ vars.SUBSCRIPTION_ID }}"
                 ]
               }
-            EOF
+EOF
           else
             echo "Role already exists, no need to create"
           fi
