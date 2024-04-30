@@ -157,7 +157,8 @@ jobs:
           --roles "{\"$OWNER_ROLE_ID\":{}}" \
           --identity-type "SystemAssigned" \
           --deployment-target-id "/subscriptions/${{ vars.SUBSCRIPTION_ID }}" \
-          --status "Enabled"
+          --status "Enabled" \
+          -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo "giving access to the user"
