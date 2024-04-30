@@ -148,15 +148,15 @@ jobs:
 
 
           echo "creating projects environments types"
-          OWNER_ROLE_ID=$(az role definition list -n "Owner" --scope /subscriptions/$SUBSCRIPTION_ID --query '[].name' -o tsv)
+          OWNER_ROLE_ID=$(az role definition list -n "Owner" --scope /subscriptions/${{ vars.SUBSCRIPTION_ID }} --query '[].name' -o tsv)
 
           az devcenter admin project-environment-type create \
           --name "DEV" \
-          --resource-group $RESOURCE_GROUP \
-          --project-name $PROJECT_FOR_ENVIRONMENTS \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
+          --project-name ${{ github.event.inputs.PROJECT_NAME }} \
           --roles "{\"$OWNER_ROLE_ID\":{}}" \
           --identity-type "SystemAssigned" \
-          --deployment-target-id "/subscriptions/$SUBSCRIPTION_ID" \
+          --deployment-target-id "/subscriptions/${{ vars.SUBSCRIPTION_ID }}" \
           --status "Enabled"
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
