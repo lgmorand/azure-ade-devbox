@@ -81,13 +81,11 @@ jobs:
           fi
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          # create dev environnement
           echo "Creating dev center"
           az devcenter admin devcenter create --location "${{ github.event.inputs.LOCATION }}" --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          # enable system identity on DevCenter
-          echo "Enabling managed identity"
+          echo "Enabling managed identity on DevCenter"
           az devcenter admin devcenter update -n "${{ github.event.inputs.DEVCENTER_NAME }}" --identity-type SystemAssigned --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
@@ -95,12 +93,13 @@ jobs:
           echo "Retrieving managed identity"
           OID=$(az ad sp list --display-name "${{ github.event.inputs.DEVCENTER_NAME }}" --query [].id -o tsv)
           printf "${ORANGE}$OID${ENDCOLOR}\n"
+
           sleep 30 # wait for replication
+
           echo -e "Creating KV policy"
           az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
-
           # retrieve DevCenterId & principalID
           echo "Retrieving IDs"
           DEVCENTER_ID=$(az devcenter admin devcenter show --name "${{ github.event.inputs.DEVCENTER_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query=id -o tsv)
@@ -109,8 +108,6 @@ jobs:
           --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
           --query identity.principalId -o tsv)
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
-
-          
 
           # Create environment types
           echo "Creating environments"
@@ -171,6 +168,13 @@ jobs:
           --role "Deployment Environments User" \
           --assignee $ENTRA_ID_USER_ID \
           --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
+          
+          az role assignment create \
+          --role "DevCenter Project Admin" \
+          --assignee $ENTRA_ID_USER_ID \
+          --scope $(az devcenter admin project show --name "${{ github.event.inputs.PROJECT_NAME }}" --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) -o none
+          
+          
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # Custom Image
@@ -189,6 +193,14 @@ jobs:
           --assignee $DEV_CENTER_CLIENT_ID \
           --scope $(az sig show --gallery-name $IMAGE_BUILDER_GALLERY_NAME \
           --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv) \
+          -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "Let's assign the Owner role to the Dev Center for the subscription in order to be able to create environment"
+          az role assignment create \
+          --role "Owner" \
+          --assignee $DEV_CENTER_CLIENT_ID \
+          --scope "/subscriptions/${{ vars.SUBSCRIPTION_ID}}" \
           -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
@@ -279,7 +291,6 @@ jobs:
           # az role assignment list --assignee $IDENTITY_CLIENT_ID --all -o table
 
           IDENTITY_ID=$(az identity show --name $IMAGE_BUILDER_IDENTITY --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" --query id -o tsv)
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
           echo -e "The easiest way to generate the template is using this assistant: https://portal.azure.com/#create/Microsoft.ImageTemplate"
           
@@ -326,7 +337,7 @@ jobs:
           
           echo -e "We have the image template but now we need to create an image inside the gallery. Let's run Azure Image Builder to create it"
           
-          echo "Creating the image (can take 30+ minutes)"
+          echo "Creating the image (can take 40+ minutes)"
           time az image builder run \
           --name $VSCODE_IMAGE_TEMPLATE \
           --resource-group ${{ github.event.inputs.RESOURCE_GROUP }} \
@@ -342,12 +353,12 @@ jobs:
           --name  $VSCODE_IMAGE_DEFINITION \
           --query id -o tsv)
 
-          printf $"${ORANGE}\u2714 $IMAGE_REFERENCE_ID ${ORANGE}\n\n"
+          printf $"${ORANGE}\u2714 Image reference: $IMAGE_REFERENCE_ID ${ORANGE}\n\n"
 
           DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER="devbox-for-custom-image-with-image-builder"
           CUSTOM_IMAGE_DEV_BOX_POOL_NAME="custom-image-dev-box-pool"
 
-          echo "creating the devbox-definition"
+          echo "creating the devbox-definition (40min)"
           time az devcenter admin devbox-definition create \
           --name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
           --dev-center ${{ github.event.inputs.DEVCENTER_NAME }} \
@@ -358,17 +369,19 @@ jobs:
           -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
-          echo -e "Create a dev box pool for project name: ${{ github.event.inputs.PROJECT_NAME }}""
+          sleep 10
 
-            time az devcenter admin pool create \
-            --name "${CUSTOM_IMAGE_DEV_BOX_POOL_NAME}" \
-            --project-name ${{ github.event.inputs.PROJECT_NAME }}" \
-            --resource-group $RESOURCE_GROUP \
-            --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
-            --local-administrator Enabled \
-            --virtual-network-type Managed \
-            --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
-            -o none
+          echo -e "Create a dev box pool for project name: ${{ github.event.inputs.PROJECT_NAME }}"
+
+          time az devcenter admin pool create \
+          --name "${CUSTOM_IMAGE_DEV_BOX_POOL_NAME}" \
+          --project-name ${{ github.event.inputs.PROJECT_NAME }}" \
+          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }}  \
+          --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
+          --local-administrator Enabled \
+          --virtual-network-type Managed \
+          --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
+          -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
           echo "::notice::You can now access your DevCenter at https://devportal.microsoft.com/"
