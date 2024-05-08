@@ -1,7 +1,7 @@
 name: AKS environment
 summary: Creates an AKS using Terraform
 description: Deploys an environment using Terraform containing an AKS cluster
-runner: Terraform
+runner: 
 templatePath: main.tf
 parameters:
   - id: "resource_name"
