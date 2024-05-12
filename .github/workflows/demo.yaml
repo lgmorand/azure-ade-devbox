@@ -43,7 +43,7 @@ jobs:
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
  
       - name: creating RG
-        run: az group create -name ${{ github.event.inputs.ACR_NAME }} -l ${{ github.event.inputs.LOCATION }}
+        run: az group create --name ${{ github.event.inputs.ACR_NAME }} -l ${{ github.event.inputs.LOCATION }}
 
   BuildImage:
     runs-on: ubuntu-latest
