@@ -23,6 +23,10 @@ on:
         description: 'Keyvault name' 
         required: true
         default: 'kv-demoadelgm'
+      ACR_NAME:
+        description: 'ACR name' 
+        required: true
+        default: 'acrdemoadelgm'
       PAT_TOKEN:
           description: 'PAT allowing to access your Github Repo' 
           required: false
@@ -31,11 +35,62 @@ on:
         required: true
         default: 'lgmorand@lgmdemo.onmicrosoft.com'
 jobs:
-  Deploy:
+
+  CreatingRG:
     runs-on: ubuntu-latest
+    steps:
+      - name: AZ Login
+        run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
+ 
+      - name: creating RG
+        run: az group create -name ${{ github.event.inputs.ACR_NAME }} -l ${{ github.event.inputs.LOCATION }}
+
+  BuildImage:
+    runs-on: ubuntu-latest
+    needs: CreatingRG
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@main
+
+      - name: AZ Login
+        run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
+
+      - name: deploy infra
+        run : |
+          az acr create -n ${{ github.event.inputs.RESOURCE_GROUP }} -g ${{ github.event.inputs.RESOURCE_GROUP }} --sku Standard
+          az acr update -n ${{ github.event.inputs.RESOURCE_GROUP }} --admin-enabled true
+
+          acrendpoint="${{ github.event.inputs.ACR_NAME }}.azurecr.io"
+          acrlogin=$(az acr credential show -n acrtestlgmorand --query username -o tsv)
+          acrpassword=$(az acr credential show -n acrtestlgmorand --query passwords[0].value -o tsv)
+
+          echo "ACR_ENDPOINT=$acrendpoint" >> "$GITHUB_ENV"
+          echo "ACR_LOGIN=$acrlogin" >> "$GITHUB_ENV"
+          echo "ACR_PASSWORD=$acrpassword" >> "$GITHUB_ENV"
+
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_ENDPOINT }}
+          username: ${{ env.ACR_LOGIN }}
+          password: ${{ env.ACR_PASSWORD }}
+
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: "1.0"
+          file: ./deployment-container/Dockerfile
+  Deploy:
+    runs-on: ubuntu-latest
+    needs: [CreatingRG, BuildImage]
+
+    steps:
+      - uses: actions/checkout@main
           
       - name: AZ Login
         run: az login --service-principal -u ${{ vars.AZ_LOGIN }} -p ${{ secrets.AZ_PASSWORD }} --tenant ${{ vars.AZ_TENANT }}
@@ -47,17 +102,13 @@ jobs:
 
           # install extension
           az extension add --name devcenter --allow-preview true
+
       - name: Deploy
         run: |
           RED="\e[31m"
           GREEN="\e[32m"
           ORANGE="\e[95m"
           ENDCOLOR="\e[0m" 
-         
-          # create RG
-          echo "Creating RG"
-          az group create -n "${{ github.event.inputs.RESOURCE_GROUP }}" -l ${{ github.event.inputs.LOCATION }} -o none
-          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           # create keyvault & inject PAT as secret
 
