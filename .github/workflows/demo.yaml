@@ -58,7 +58,7 @@ jobs:
       - name: deploy infra
         run : |
           az acr create -n ${{ github.event.inputs.ACR_NAME }} -g ${{ github.event.inputs.RESOURCE_GROUP }} --sku Standard
-          az acr update -n ${{ github.event.inputs.RESOURCE_GROUP }} --admin-enabled true
+          az acr update -n ${{ github.event.inputs.ACR_NAME }} --admin-enabled true
 
           acrendpoint="${{ github.event.inputs.ACR_NAME }}.azurecr.io"
           acrlogin=$(az acr credential show -n acrtestlgmorand --query username -o tsv)
