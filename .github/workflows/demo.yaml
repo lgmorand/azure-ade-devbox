@@ -63,6 +63,8 @@ jobs:
           ACR_REGISTRY_ID=$(az acr show --name ${{ github.event.inputs.ACR_NAME }} --query "id" --output tsv)
           ENDPOINT="${{ github.event.inputs.ACR_NAME }}.azurecr.io"
           PASSWORD=$(az ad sp create-for-rbac --name $SERVICE_PRINCIPAL_NAME --scopes $ACR_REGISTRY_ID --role acrpull --query "password" --output tsv)
+          sleep 60 
+          
           USERNAME=$(az ad sp list --display-name $SERVICE_PRINCIPAL_NAME --query "[].appId" --output tsv)
 
           echo "ACR_ENDPOINT=$ENDPOINT" >> "$GITHUB_ENV"
