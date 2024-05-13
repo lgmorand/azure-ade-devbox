@@ -86,7 +86,8 @@ jobs:
         with:
           context: "{{defaultContext}}:deployment-container"
           push: true
-          tags: "lgmorand/adetf:1.0"
+          tags: "${{ env.ACR_LOGIN }}/adetf:1.0"
+          
   Deploy:
     runs-on: ubuntu-latest
     needs: [CreatingRG]
