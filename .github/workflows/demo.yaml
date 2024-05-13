@@ -58,25 +58,20 @@ jobs:
       - name: deploy infra
         run : |
           az acr create -n ${{ github.event.inputs.ACR_NAME }} -g ${{ github.event.inputs.RESOURCE_GROUP }} --sku Standard
-          az acr update -n ${{ github.event.inputs.ACR_NAME }} --admin-enabled true
 
-          acrendpoint="${{ github.event.inputs.ACR_NAME }}.azurecr.io"
-          acrlogin=$(az acr credential show -n acrtestlgmorand --query username -o tsv)
-          acrpassword=$(az acr credential show -n acrtestlgmorand --query passwords[0].value -o tsv)
+          SERVICE_PRINCIPAL_NAME="spn-demoade"
+          ACR_REGISTRY_ID=$(az acr show --name ${{ github.event.inputs.ACR_NAME }} --query "id" --output tsv)
+          ENDPOINT="${{ github.event.inputs.ACR_NAME }}.azurecr.io"
+          PASSWORD=$(az ad sp create-for-rbac --name $SERVICE_PRINCIPAL_NAME --scopes $ACR_REGISTRY_ID --role acrpull --query "password" --output tsv)
+          USERNAME=$(az ad sp list --display-name $SERVICE_PRINCIPAL_NAME --query "[].appId" --output tsv)
 
-          echo "ACR_ENDPOINT=$acrendpoint" >> "$GITHUB_ENV"
-          echo "ACR_LOGIN=$acrlogin" >> "$GITHUB_ENV"
-          echo "ACR_PASSWORD=$acrpassword" >> "$GITHUB_ENV"
-
+          echo "ACR_ENDPOINT=$ENDPOINT" >> "$GITHUB_ENV"
+          echo "ACR_LOGIN=$USERNAME" >> "$GITHUB_ENV"
+          echo "ACR_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: show values
-        run: |
-          echo ${{ env.ACR_ENDPOINT }}
-          echo ${{ env.ACR_LOGIN }}
-          echo ${{ env.ACR_PASSWORD }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -428,16 +423,16 @@ jobs:
           sleep 10
 
           echo -e "Create a dev box pool for project name: ${{ github.event.inputs.PROJECT_NAME }}"
-
-          time az devcenter admin pool create \
-          --name "${CUSTOM_IMAGE_DEV_BOX_POOL_NAME}" \
-          --project-name ${{ github.event.inputs.PROJECT_NAME }}" \
-          --resource-group ${{ github.event.inputs.RESOURCE_GROUP }}  \
+          az devcenter admin pool create --location "${{ github.event.inputs.LOCATION }}" \
           --devbox-definition-name $DEV_BOX_FOR_CUSTOM_IMAGE_WITH_IMAGE_BUILDER \
-          --local-administrator Enabled \
-          --virtual-network-type Managed \
-          --managed-virtual-network-regions ${{ github.event.inputs.LOCATION }} \
+          --pool-name "$CUSTOM_IMAGE_DEV_BOX_POOL_NAME" \
+          --project-name "${{ github.event.inputs.PROJECT_NAME }}" \
+          --resource-group "${{ github.event.inputs.RESOURCE_GROUP }}" \
+          --local-administrator "Enabled" \
+          --virtual-network-type "Managed" \
+          --managed-virtual-network-regions "westeurope" \
           -o none
+         
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
           echo "::notice::You can now access your DevCenter at https://devportal.microsoft.com/"
