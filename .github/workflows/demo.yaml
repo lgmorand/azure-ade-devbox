@@ -86,8 +86,8 @@ jobs:
         with:
           context: "{{defaultContext}}:deployment-container"
           push: true
-          tags: "${{ env.ACR_LOGIN }}/adetf:1.0"
-          
+          tags: "${{ github.event.inputs.ACR_NAME }}/adetf:1.0"
+
   Deploy:
     runs-on: ubuntu-latest
     needs: [CreatingRG]
