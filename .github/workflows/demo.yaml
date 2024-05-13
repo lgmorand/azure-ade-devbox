@@ -86,7 +86,7 @@ jobs:
         with:
           context: "{{defaultContext}}:deployment-container"
           push: true
-          tags: "${{ github.event.inputs.ACR_NAME }}/adetf:1.0"
+          tags: "${{ github.event.inputs.ACR_NAME }}.azurecr.io/adetf:1.0"
 
   Deploy:
     runs-on: ubuntu-latest
