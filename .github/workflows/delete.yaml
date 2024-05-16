@@ -85,7 +85,7 @@ jobs:
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           echo "deleting Keyvault"
-          az keyvault delete -n "${{ github.event.inputs.KV_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} --yes
+          az keyvault delete -n "${{ github.event.inputs.KV_NAME }}" -g ${{ github.event.inputs.RESOURCE_GROUP }} 
           az keyvault purge --name "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }}
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
