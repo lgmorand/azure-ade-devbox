@@ -58,6 +58,7 @@ jobs:
       - name: deploy infra
         run : |
           az acr create -n ${{ github.event.inputs.ACR_NAME }} -g ${{ github.event.inputs.RESOURCE_GROUP }} --sku Standard
+          az acr update --name ${{ github.event.inputs.ACR_NAME }} --anonymous-pull-enabled
 
           SERVICE_PRINCIPAL_NAME="spn-demoade"
           ACR_REGISTRY_ID=$(az acr show --name ${{ github.event.inputs.ACR_NAME }} --query "id" --output tsv)
