@@ -1,4 +1,4 @@
-name: AKS environment
+name: "AKS environment"
 summary: Creates an AKS using Terraform
 description: Deploys an environment using Terraform containing an AKS cluster
 runner: "acrdemoadelgm.azurecr.io/adetf:1.0"
