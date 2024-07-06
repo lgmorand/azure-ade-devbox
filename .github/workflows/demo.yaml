@@ -126,8 +126,8 @@ jobs:
 
           case "$kvName" in 
           "${{ github.event.inputs.KV_NAME }}" )  printf $"${ORANGE}KV name already exists. Trying to purge old version first ${ENDCOLOR}\n\n"
-            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";
-          *) ;
+            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";;
+          *) ;;
           esac
 
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"  -o none
