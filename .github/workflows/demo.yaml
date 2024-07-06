@@ -121,13 +121,18 @@ jobs:
 
           echo "Creating keyvault"
           kvName=$(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv)
+
+          sleep 30 # wait for propagation
+
           case "$kvName" in 
-          "${{ github.event.inputs.KV_NAME }}" ) echo 'KV name already exists. Trying to purge'
-            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";;
-          *) ;;
+          "${{ github.event.inputs.KV_NAME }}" )  printf $"${ORANGE}KV name already exists. Trying to purge old version first ${ENDCOLOR}\n\n"
+            az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";
+          *) ;
           esac
 
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"  -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
           if [ -z "$GHPAT" ]
           then
