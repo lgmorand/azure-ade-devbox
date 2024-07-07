@@ -122,9 +122,7 @@ jobs:
           echo "Creating keyvault"
           kvName=$(az keyvault list-deleted --query "[?contains(name, '${{ github.event.inputs.KV_NAME }}')].name" -o tsv)
 
-          sleep 30 # wait for propagation
-
-          case "$kvName" in 
+                    case "$kvName" in 
           "${{ github.event.inputs.KV_NAME }}" )  printf $"${ORANGE}KV name already exists. Trying to purge old version first ${ENDCOLOR}\n\n"
             az keyvault purge --name "${{ github.event.inputs.KV_NAME }}";;
           *) ;;
@@ -136,6 +134,8 @@ jobs:
           echo "add rights to KV"
           export KEYVAULT_RESOURCE_ID="$(az keyvault show -g "${{ github.event.inputs.RESOURCE_GROUP }}" -n ${{ github.event.inputs.KV_NAME }} --query id -o tsv)"
           az role assignment create --role "Key Vault Administrator" --assignee ${{ vars.AZ_LOGIN }} --scope $KEYVAULT_RESOURCE_ID
+
+          sleep 120 # wait for propagation
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
