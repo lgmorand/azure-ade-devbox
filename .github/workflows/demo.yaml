@@ -45,7 +45,7 @@ jobs:
       - name: creating RG
         run: az group create --name ${{ github.event.inputs.RESOURCE_GROUP }} -l ${{ github.event.inputs.LOCATION }}
 
-  BuildImage:
+  BuildTerraformImage:
     runs-on: ubuntu-latest
     needs: CreatingRG
 
@@ -131,6 +131,11 @@ jobs:
           esac
 
           az keyvault create -n "${{ github.event.inputs.KV_NAME }}" -l ${{ github.event.inputs.LOCATION }} -g "${{ github.event.inputs.RESOURCE_GROUP }}"  -o none
+          printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
+
+          echo "add rights to KV"
+          export KEYVAULT_RESOURCE_ID="$(az keyvault show -g "${{ github.event.inputs.RESOURCE_GROUP }}" -n ${{ github.event.inputs.KV_NAME }} --query id -o tsv)"
+          az role assignment create --role "Key Vault Administrator" --assignee ${{ vars.AZ_LOGIN }} --scope $KEYVAULT_RESOURCE_ID
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
           export GHPAT="${{ github.event.inputs.PAT_TOKEN }}"
