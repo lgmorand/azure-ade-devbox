@@ -133,8 +133,7 @@ jobs:
 
           echo "add rights to KV"
           export KEYVAULT_RESOURCE_ID="$(az keyvault show -g "${{ github.event.inputs.RESOURCE_GROUP }}" -n ${{ github.event.inputs.KV_NAME }} --query id -o tsv)"
-          az role assignment create --role "Key Vault Administrator" --assignee ${{ vars.AZ_LOGIN }} --scope $KEYVAULT_RESOURCE_ID
-
+          az role assignment create --role "Key Vault Administrator" --assignee ${{ vars.AZ_LOGIN }} --scope $KEYVAULT_RESOURCE_ID -o none
           sleep 120 # wait for propagation
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
 
@@ -165,7 +164,9 @@ jobs:
           sleep 30 # wait for replication
 
           echo -e "Creating KV policy"
-          az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
+          az role assignment create --role "Key Vault Secrets User" --assignee "$OID" --scope $KEYVAULT_RESOURCE_ID
+          sleep 120 # wait for propagation
+          #az keyvault set-policy -n "${{ github.event.inputs.KV_NAME }}" --secret-permissions get --object-id $OID -g ${{ github.event.inputs.RESOURCE_GROUP }} -o none
           printf $"${GREEN}\u2714 Success ${ENDCOLOR}\n\n"
           
           # retrieve DevCenterId & principalID
