@@ -454,4 +454,13 @@ jobs:
           
           echo "::notice::You can now access your DevCenter at https://devportal.microsoft.com/"
 
+ Clean:
+    runs-on: ubuntu-latest
+    needs: [Deploy, BuildTerraformImage]
 
+    steps:
+      - uses: igorjs/gh-actions-clean-workflow@main
+        with:
+          runs_older_than: 1 
+          token: ${{ github.token }}
+          runs_to_keep: 1
