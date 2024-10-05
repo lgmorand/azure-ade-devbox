@@ -1,0 +1,66 @@
+name: Terraform Apply - Custom
+on:
+  workflow_dispatch:
+    inputs:
+      DEVCENTER_NAME:
+        description: 'DevCenter Name'     
+        required: true
+        default: 'demodevcenter'
+      PROJECT_NAME:
+        description: 'Project Name' 
+        required: true
+        default: 'demodevproject'
+      location: 
+        description: 'Azure Region to deploy resources'
+        required: true
+        default: 'northeurope'
+        type: choice
+        options:
+          - 'northeurope'
+          - 'westeurope'
+          - 'francecentral'
+      resource_group_name: 
+        description: 'DevBox resource group to create'
+        required: true
+        default: 'devbox-rg'
+        type: string  
+      # azurecredentials: 
+      #   description: 'sp credentials'
+      #   required: true
+      #   default: false
+      #   type: string
+jobs:
+  build:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Prepare environment variables
+        env:
+          AZURE_CREDENTIALS: ${{ github.event.inputs.azurecredentials }}
+        run: | 
+          # Parse Azure secret into Terraform variables
+          echo "ARM_CLIENT_ID=$( jq -r '.clientId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
+          echo "ARM_CLIENT_SECRET=$( jq -r '.clientSecret' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
+          echo "ARM_SUBSCRIPTION_ID=$( jq -r '.subscriptionId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
+          echo "ARM_TENANT_ID=$( jq -r '.tenantId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV
+        shell: bash          
+
+      # - name: Terraform Init
+      #   id: init
+      #   run: terraform -chdir=demo init
+
+      # - name: Terraform Apply
+      #   id: apply
+      #   env:
+      #     TF_VAR_subscription_id: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      #     TF_VAR_tenant_id: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      #     TF_VAR_location: ${{ github.event.inputs.location }}
+      #     TF_VAR_resource_group_name: ${{ github.event.inputs.resource_group_name }}
+      #   run: terraform -chdir=demo apply -auto-approve -no-color

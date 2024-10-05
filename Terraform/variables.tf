@@ -17,3 +17,8 @@ variable "tenant_id" {
   default = "######"
   type = string
 }
+
+variable "location" {
+  default = "northeurope"
+  type = string
+}
