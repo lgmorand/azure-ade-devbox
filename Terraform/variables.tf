@@ -8,6 +8,11 @@ variable "devcenter_name" {
   type = string
 }
 
+variable "devproject_name" {
+  default = "DevProjectViaTerraform"
+  type = string
+}
+
 variable "subscription_id" {
   default = "######"
   type = string

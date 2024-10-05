@@ -18,7 +18,7 @@ resource "azurerm_dev_center" "demodevcenter" {
 resource "azurerm_dev_center_project" "demodevproject" {
   dev_center_id       = azurerm_dev_center.demodevcenter.id
   location            = azurerm_resource_group.rg.location
-  name                = "${var.devcenter_name}DevProject"
+  name                = "${var.devproject_name}"
   maximum_dev_boxes_per_user = 3
   resource_group_name = azurerm_resource_group.rg.name
   depends_on = [ azurerm_dev_center.demodevcenter ]
