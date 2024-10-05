@@ -43,7 +43,7 @@ jobs:
           echo "ARM_CLIENT_SECRET=$( jq -r '.clientSecret' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
           echo "ARM_SUBSCRIPTION_ID=$( jq -r '.subscriptionId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
           echo "ARM_TENANT_ID=$( jq -r '.tenantId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV
-          echo "yuyuyuy ${{ vars.ARM_SUBSCRIPTION_ID }}";
+          echo "TOTO=${{ vars.ARM_SUBSCRIPTION_ID }}">> $GITHUB_ENV;
         shell: bash         
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
