@@ -1,4 +1,4 @@
-name: Terraform Apply - Custom
+name: Terraform Apply - DevBox
 on:
   workflow_dispatch:
     inputs:
