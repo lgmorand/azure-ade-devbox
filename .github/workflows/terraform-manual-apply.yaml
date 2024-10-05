@@ -34,13 +34,6 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      #- uses: hashicorp/setup-terraform@v1
-
-      - uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Prepare environment variables
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
@@ -50,7 +43,15 @@ jobs:
           echo "ARM_CLIENT_SECRET=$( jq -r '.clientSecret' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
           echo "ARM_SUBSCRIPTION_ID=$( jq -r '.subscriptionId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
           echo "ARM_TENANT_ID=$( jq -r '.tenantId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV
-        shell: bash          
+        shell: bash         
+      - uses: actions/checkout@v2
+      #- uses: hashicorp/setup-terraform@v1
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+       
 
       # - name: Terraform Init
       #   id: init
