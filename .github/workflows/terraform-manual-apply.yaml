@@ -45,22 +45,16 @@ jobs:
           echo "ARM_TENANT_ID=$( jq -r '.tenantId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV
         shell: bash         
       - uses: actions/checkout@v2
-      #- uses: hashicorp/setup-terraform@v1
+      - uses: hashicorp/setup-terraform@v1
 
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Azure CLI script
-        uses: azure/cli@v2
-        with:
-           azcliversion: latest
-           inlineScript: |
-             az account show
-       
+    
 
-      # - name: Terraform Init
-      #   id: init
-      #   run: terraform -chdir=demo init
+      - name: Terraform Init
+        id: init
+        run: terraform -chdir=Terraform init
 
       # - name: Terraform Apply
       #   id: apply
