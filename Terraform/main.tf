@@ -67,15 +67,28 @@ resource "azurerm_dev_center_network_connection" "devcenternetworkconnection" {
 }
 
 
+
+
+
 #creation dev box definition
-resource "azurerm_dev_center_dev_box_definition" "devboxdefinition" {
-  name               = "${var.devcenter_name}DevboxDefinition"
+resource "azurerm_dev_center_dev_box_definition" "WebDevBox" {
+  name               = "${var.devcenter_name}webdevbox"
   location           = azurerm_resource_group.rg.location
   dev_center_id      = azurerm_dev_center.demodevcenter.id
   image_reference_id = "${azurerm_dev_center.demodevcenter.id}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win10-m365-gen2"
   sku_name           = "general_i_8c32gb256ssd_v2"
   depends_on = [ azurerm_dev_center.demodevcenter ]
 }
+
+resource "azurerm_dev_center_dev_box_definition" "SuperPowerfullDevBox" {
+  name               = "${var.devcenter_name}superpowerfulldevbox"
+  location           = azurerm_resource_group.rg.location
+  dev_center_id      = azurerm_dev_center.demodevcenter.id
+  image_reference_id = "${azurerm_dev_center.demodevcenter.id}/galleries/default/images/microsoftvisualstudio_visualstudioplustools_vs-2022-ent-general-win10-m365-gen2"
+  sku_name           = "general_i_32c128gb512ssd_v2"
+  depends_on = [ azurerm_dev_center.demodevcenter ]
+}
+
 
 resource "azurerm_dev_center_environment_type" "envtypePROD" {
   name          = "PROD"

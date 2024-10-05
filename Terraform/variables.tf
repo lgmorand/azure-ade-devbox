@@ -9,11 +9,11 @@ variable "devcenter_name" {
 }
 
 variable "subscription_id" {
-  default = "ef937f23-fe0b-4eb9-8d69-c5f9df8fc17c"
+  default = "######"
   type = string
 }
 
 variable "tenant_id" {
-  default = "8b45c261-79fd-420a-8589-9f1bcee6865f"
+  default = "######"
   type = string
 }
