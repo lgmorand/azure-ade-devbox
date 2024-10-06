@@ -44,7 +44,11 @@ jobs:
           echo "ARM_SUBSCRIPTION_ID=$( jq -r '.subscriptionId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
           echo "ARM_TENANT_ID=$( jq -r '.tenantId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV
           echo "TOTO=${{ vars.ARM_SUBSCRIPTION_ID }}">> $GITHUB_ENV;
-        shell: bash         
+        shell: bash
+      - name: Use the value
+        id: step_two
+        run: |
+          printf '%s\n' "$ARM_TENANT_ID" # This will output 'yellow'
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
 
@@ -55,7 +59,10 @@ jobs:
       - name: Terraform Init
         id: init
         run: terraform -chdir=Terraform init
-
+      - name: Use the value
+        id: step_three
+        run: |
+          printf '%s\n' "$ARM_TENANT_ID" # This will output 'yellow'
       - name: Terraform Apply
         id: apply
         env:
