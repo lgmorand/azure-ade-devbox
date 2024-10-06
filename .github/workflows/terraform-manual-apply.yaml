@@ -24,11 +24,11 @@ on:
         required: true
         default: 'devbox-rg'
         type: string  
-      # azurecredentials: 
-      #   description: 'sp credentials'
-      #   required: true
-      #   default: false
-      #   type: string
+      azurecredentials: 
+        description: 'sp credentials'
+        required: true
+        default: '{"clientId": ""\n,"clientSecret": "","subscriptionId": "","tenantId": ""}'
+        type: string
 jobs:
   build:
     name: Terraform Apply
@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Prepare environment variables
         env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CREDENTIALS: ${{ github.event.inputs.azurecredentials }}
         run: | 
           # Parse Azure secret into Terraform variables
           echo "ARM_CLIENT_ID=$( jq -r '.clientId' <<< $AZURE_CREDENTIALS )" >> $GITHUB_ENV;
@@ -61,8 +61,8 @@ jobs:
         env:
           TF_VAR_devcenter_name: ${{ github.event.inputs.DEVCENTER_NAME }}
           TF_VAR_devproject_name: ${{ github.event.inputs.PROJECT_NAME }}
-          TF_VAR_subscription_id: ${{ vars.ARM_SUBSCRIPTION_ID }}
-          TF_VAR_tenant_id: ${{ vars.ARM_TENANT_ID }}
+          TF_VAR_subscription_id: "$ARM_SUBSCRIPTION_ID"
+          TF_VAR_tenant_id: "$ARM_TENANT_ID"
           TF_VAR_location: ${{ github.event.inputs.location }}
           TF_VAR_resource_group_name: ${{ github.event.inputs.resource_group_name }}
 
