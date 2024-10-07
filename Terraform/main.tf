@@ -114,3 +114,29 @@ resource "azurerm_dev_center_environment_type" "envtypeDEV" {
     Env = "DEV"
   }
 }
+
+# access to the user
+locals {
+    principals = toset(var.principal_ids)
+}
+
+resource "azurerm_role_assignment" "devbox_user_role_assignment" {
+    for_each = local.principals    
+    scope                            = azurerm_dev_center_project.demodevproject.id
+    role_definition_name             = "DevCenter Dev Box User"
+    principal_id                     = each.key
+}
+
+resource "azurerm_role_assignment" "project_admin_role_assignment" {
+    for_each = local.principals    
+    scope                            = azurerm_dev_center_project.demodevproject.id
+    role_definition_name             = "DevCenter Project Admin"
+    principal_id                     = each.key
+}
+
+resource "azurerm_role_assignment" "deploy_env_user_role_assignment" {
+    for_each = local.principals    
+    scope                            = azurerm_dev_center_project.demodevproject.id
+    role_definition_name             = "Deployment Environments User"
+    principal_id                     = each.key
+}
