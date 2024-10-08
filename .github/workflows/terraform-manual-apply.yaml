@@ -23,7 +23,12 @@ on:
         description: 'DevBox resource group to create'
         required: true
         default: 'devbox-rg'
-        type: string  
+        type: string
+      principal_ids: 
+        description: 'GUIDs user to access devbox portal'
+        required: true
+        default: '["guid"]'
+        type: string
       azurecredentials: 
         description: 'sp credentials'
         required: true
@@ -71,6 +76,7 @@ jobs:
           TF_VAR_subscription_id: ${{env.ARM_SUBSCRIPTION_ID}}
           TF_VAR_tenant_id: ${{env.ARM_TENANT_ID}}
           TF_VAR_location: ${{ github.event.inputs.location }}
-          TF_VAR_resource_group_name: ${{ github.event.inputs.resource_group_name }}
-
+          TF_VAR_resource_group_name: ${{ github.event.inputs.resource_group_name }}          
+          TF_VAR_principal_ids: ${{ github.event.inputs.principal_ids }}
+          
         run: terraform -chdir=Terraform apply -auto-approve -no-color
