@@ -1,4 +1,4 @@
-name: Deploy demo env
+name: CLI Create demo env
 
 on:
   workflow_dispatch:
@@ -15,10 +15,15 @@ on:
         description: 'Resource Group' 
         required: true
         default: 'rg-demo-ade'
-      LOCATION:
-        description: 'Location' 
+      LOCATION: 
+        description: 'Azure Region to deploy resources'
         required: true
         default: 'westeurope'
+        type: choice
+        options:
+          - 'northeurope'
+          - 'westeurope'
+          - 'francecentral'
       KV_NAME:
         description: 'Keyvault name' 
         required: true

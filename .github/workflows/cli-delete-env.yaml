@@ -1,4 +1,4 @@
-name: Delete
+name: CLI Delete env
 
 on:
   workflow_dispatch:

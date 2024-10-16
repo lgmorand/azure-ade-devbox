@@ -1,4 +1,4 @@
-name: Terraform Apply - DevBox
+name: Terraform Create demo env
 on:
   workflow_dispatch:
     inputs:

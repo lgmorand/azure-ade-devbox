@@ -1,6 +1,4 @@
-name: Terraform Destroy - DevBox
-on:
-  workflow_dispatch:   
+name: Terraform Delete env
 jobs:
   build:
     name: Terraform Destroy
