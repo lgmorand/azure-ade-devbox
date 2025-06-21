@@ -16,4 +16,4 @@ jobs:
           runs_older_than: 1 
           token: ${{ github.token }}
           runs_to_keep: 1
-      - uses: gautamkrishnar/keepalive-workflow@v2
+      - uses: lgmorand/gh-workflow-keepalive@v1
